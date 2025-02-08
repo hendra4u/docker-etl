@@ -29,34 +29,40 @@ docker stats
 To open up a bash shell inside the spark container run the docker-compose exec command:
 
 ```
-docker-compose exec kafka bash
-
+# From spark server
+docker-compose exec spark bash
 # Install Python
-apt-get update
-apt-get install -y python3 python3-pip
 pip install -r requirements.txt
 
 # it's for checking your topics
-/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list 
+python check_kafka_topic.py
 
 # it's for create topic.
-/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+python create_topic_send_data.py
+
+# This is for starting to data-generator for streaming-data.
+#python dataframe_to_kafka.py -i ./input/iot_telemetry_data.csv -t test1 -b kafka:9092
+
+# This is for starting the spark-streaming python scrips.
+# read data
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 --jars kafka-clients-2.2.0.jar --driver-class-path kafka-clients-2.2.0.jar spark_read_from_topic_and_show.py
+#spark-submit --packages io.delta:delta-core_2.12:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 project_main.py
+
+# From kafka server
+docker-compose exec kafka1 bash
+# docker-compose exec kafka2 bash
+
+# it's for checking your topics
+kafka-topics.sh --bootstrap-server 172.25.0.12:9092 --list 
+
+# it's for create topic.
+kafka-topics.sh --bootstrap-server kafka:9092 \
 --create --topic test1 \
 --replication-factor 1 \
 --partitions 3
 
-# it's for checking your topics
-/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list 
-
-
-# This is for starting to data-generator for streaming-data.
-python dataframe_to_kafka.py -i ./input/iot_telemetry_data.csv -t test1 -b kafka:9092
-
 # it's for reading your data in your topic
-kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test1 
-
-# This is for starting the spark-streaming python scrips.
-spark-submit --packages io.delta:delta-core_2.12:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.1 project_main.py
+kafka-console-consumer.sh --bootstrap-server 172.25.0.12:9092 --topic SAMPLE_TOPIC_NAME 
 
 # it's for delete the topic.
-/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic test1
+kafka-topics.sh --bootstrap-server 172.25.0.12:9092 --delete --topic SAMPLE_TOPIC_NAME
